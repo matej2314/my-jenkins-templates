@@ -1,0 +1,106 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Validate parameters') {
+            steps {
+                script {
+                    if (!params.CONT_NAME) {
+                        error "Container name is required"
+                    }
+                    if (!params.GITHUB_REPO_URL) {
+                        error "GitHub repository URL is required"
+                    }
+                }
+            }
+        }
+
+        stage('Create project directory') {
+            steps {
+                script {
+                    echo "Checking if directory ${CONT_NAME} exists"
+                    def dirExists = sh(script: "test -d ${CONT_NAME} && echo true || echo false", returnStdout: true).trim()
+            
+                    if (dirExists == 'true') {
+                        echo "Directory ${CONT_NAME} already exists. Using it."
+                    } else {
+                        echo "Creating directory ${CONT_NAME}"
+                        sh "mkdir ${CONT_NAME}"
+                    }
+                }
+            }
+        }
+
+        stage('Clone') {
+            steps {
+                dir("${CONT_NAME}") { 
+                    script {
+                        echo "Cloning repository from ${GITHUB_REPO_URL}"
+                        git url: "${GITHUB_REPO_URL}", branch: 'main'
+                    }
+                }
+            }
+        }
+
+        stage('Security Scan with Snyk') {
+            steps {
+                dir("${CONT_NAME}") {
+                    script {
+                        echo "Running Snyk security scan..."
+                        
+                        sh 'snyk --version'
+                        
+                        if (fileExists('package.json')) {
+                            echo "Scanning npm dependencies..."
+                            sh 'snyk test --severity-threshold=high'
+                        }
+                        
+                        if (fileExists('Dockerfile')) {
+                            echo "Scanning Docker image..."
+                            sh 'snyk container test . --severity-threshold=high'
+                        }
+                        
+                        if (fileExists('docker-compose.yml')) {
+                            echo "Scanning docker-compose services..."
+                            sh 'snyk iac test docker-compose.yml --severity-threshold=high'
+                        }
+                        
+                        echo "Snyk security scan completed"
+                    }
+                }
+            }
+        }
+
+        stage('Check soft versions') {
+            steps {
+                script {
+                    sh 'docker --version'
+                    sh 'docker-compose --version'
+                }
+            }
+        }
+        
+        stage('Run Docker Containers') {
+            steps {
+                dir("${CONT_NAME}") {
+                    script {
+                        sh '''
+                            docker-compose up -d --build
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Clear unused docker images') {
+            steps {
+                script {
+                    echo 'Deleting unused docker images'
+                    sh 'docker image prune -f --filter "dangling=true"'
+                    echo 'Cleaning docker cache'
+                    sh 'docker builder prune -f'
+                }
+            }
+        }
+    }
+}

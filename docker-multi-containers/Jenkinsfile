@@ -1,0 +1,172 @@
+pipeline {
+    agent any
+
+    environment {
+        SERVER_URL = "http://185.170.196.107"
+    }
+
+    stages {
+        stage('Validate parameters') {
+            steps {
+                script {
+                    if (!params.CONT_NAME) {
+                        error "Container name is required"
+                    }
+                    if (!params.GITHUB_REPO_URL) {
+                        error "GitHub repository URL is required"
+                    }
+                }
+            }
+        }
+        stage('Create project directory') {
+            steps {
+                script {
+                    echo "Checking if directory ${CONT_NAME} exists"
+                    def dirExists = sh(script: "test -d ${CONT_NAME} && echo true || echo false", returnStdout: true).trim()
+            
+                    if (dirExists == 'true') {
+                        echo "Directory ${CONT_NAME} already exists. Using it."
+                    } else {
+                        echo "Creating directory ${CONT_NAME}"
+                        sh "mkdir ${CONT_NAME}"
+                    }
+                }
+            }
+        }
+
+        stage('Clone') {
+            steps {
+                dir("${CONT_NAME}") { 
+                    script {
+                        echo "Cloning repository from ${GITHUB_REPO_URL}"
+                        git url: "${GITHUB_REPO_URL}", branch: 'main'
+                    }
+                }
+            }
+        }
+
+        stage('Security Scan with Snyk') {
+            steps {
+                dir("${CONT_NAME}") {
+                    script {
+                        echo "Running Snyk security scan..."
+                        
+                        sh 'snyk --version'
+                        
+                        if (fileExists('package.json')) {
+                            echo "Scanning npm dependencies..."
+                            sh 'snyk test --severity-threshold=high'
+                        }
+                        
+                        if (fileExists('Dockerfile')) {
+                            echo "Scanning Docker image..."
+                            sh 'snyk container test . --severity-threshold=high'
+                        }
+                        
+                        if (fileExists('docker-compose.yml')) {
+                            echo "Scanning docker-compose services..."
+                            sh 'snyk iac test docker-compose.yml --severity-threshold=high'
+                        }
+                        
+                        echo "Snyk security scan completed"
+                    }
+                }
+            }
+        }
+
+        stage('Read data from docker-compose.yml') {
+            steps {
+                script {
+                    def composeFile = readYaml file: "${CONT_NAME}/docker-compose.yml"
+                    def backendPorts = composeFile.services.backend.ports
+                    def frontendPorts = composeFile.services.app.ports
+                    
+                    env.BACKEND_PORT = backendPorts[0].split(':')[0]
+                    env.FRONTEND_PORT = frontendPorts[0].split(':')[0]
+                    def frontendOrigin = composeFile.services.app.environment.find{ it.startsWith('FRONTEND_ORIGIN=') }
+                    def backendOrigin = composeFile.services.backend.environment.find{it.startsWith('BACKEND_ORIGIN=')}
+
+                    env.FRONTEND_ORIGIN = frontendOrigin?.split('=')[1] ?: "${env.SERVER_URL}:${env.FRONTEND_PORT}"
+                    env.BACKEND_ORIGIN = backendOrigin?.split('=')[1] ?: "${env.SERVER_URL}:${env.BACKEND_PORT}"
+
+                }
+            }
+        }
+
+        stage('Check soft versions') {
+            steps {
+                script {
+                    sh 'docker --version'
+                    sh 'docker-compose --version'
+                }
+            }
+        }
+        
+        stage('Run Docker Containers') {
+            steps {
+                dir("${CONT_NAME}") { 
+                    script {
+                        sh 'docker-compose up --build -d'
+                    }
+                }
+            }
+        }
+
+        stage('Run OWASP ZAP scan') {
+            steps {
+                script {
+                    echo "Running OWASP ZAP scan on frontend and backend..."
+                    
+                    
+                    def apiDocsUrl = "${env.BACKEND_ORIGIN}/swagger.json"
+                    def apiDocsAvailable = false
+
+                    
+                    try {
+                        def responseCode = sh(script: "curl --write-out '%{http_code}' --silent --output /dev/null ${apiDocsUrl}", returnStdout: true).trim()
+                        if (responseCode == '200') {
+                        apiDocsAvailable = true
+                        }
+                    } catch (Exception e) {
+                        echo "Error checking API docs availability: ${e}"
+                    }
+
+                    if (apiDocsAvailable) {
+                        echo "API documentation found. Running ZAP API scan..."
+                        sh """
+                          docker run --name zap-backend-api \
+                          --rm -v \${CONT_NAME}:/zap/wrk:rw zaproxy/zap-stable \
+                            zap-api-scan.py -t ${apiDocsUrl} -f openapi
+                        """
+                    } else {
+                        echo "API documentation not found. Running full scan..."
+                        sh """
+                           docker run --name zap-backend \
+                           --rm -v \${CONT_NAME}:/zap/wrk:rw zaproxy/zap-stable \
+                            zap-full-scan.py -t ${env.BACKEND_ORIGIN}
+                        """
+                    }
+
+                    
+                    echo "Running ZAP scan on frontend..."
+                    sh """
+                       docker run --name zap-frontend \
+                       --rm -v \${CONT_NAME}:/zap/wrk:rw zaproxy/zap-stable \
+                        zap-full-scan.py -t ${env.FRONTEND_ORIGIN}
+                    """
+                }
+            }
+        }
+
+        stage('Clear unused docker images') {
+            steps {
+                script {
+                    echo 'Deleting unused docker images'
+                    sh 'docker image prune -f --filter "dangling=true"'
+                    echo 'Cleaning docker cache'
+                    sh 'docker builder prune -f'
+                }
+            }
+        }
+    }
+}
