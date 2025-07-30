@@ -1,0 +1,24 @@
+pipeline {
+    agent any
+    
+    parameters {
+        string(name: 'CONT_NAME', defaultValue: '', description: 'Container name')
+        string(name: 'GITHUB_REPO_URL', defaultValue: '', description: 'GitHub repository URL')
+    }
+    
+    stages {
+        stage('Validate parameters') {
+            steps {
+                script {
+                    if (!params.CONT_NAME?.trim()) {
+                        error "CONT_NAME is required"
+                    }
+                    if (!params.GITHUB_REPO_URL?.trim()) {
+                        error "GITHUB_REPO_URL is required"
+                    }
+                    echo "Parameters are valid"
+                }
+            }
+        }
+    }
+}

@@ -2,13 +2,13 @@ pipeline {
     agent any
     
     tools {
-        nodejs 'nodejs_20' // Nazwa, którą nadałeś w konfiguracji NodeJS Plugin
+        nodejs 'nodejs_20'
     }
 
     environment {
         NGINX_PORT = 80
         NGINX_CONF_PATH = "/etc/nginx/sites-available/"
-    } 
+    }
 
     stages {
         stage('Clone') {
@@ -60,36 +60,34 @@ pipeline {
         stage('Change NGINX Config') {
             steps {
                 script {
-                    // Tworzenie pliku konfiguracyjnego
                     sh """
-                    # Utwórz plik, jeśli nie istnieje
-                    touch ${NGINX_CONF_PATH}/${REPO_NAME}
-                    chmod 666 ${NGINX_CONF_PATH}
+                        # Utwórz plik, jeśli nie istnieje
+                        touch ${NGINX_CONF_PATH}/${REPO_NAME}
+                        chmod 666 ${NGINX_CONF_PATH}
 
-                    # Zapisz konfigurację do pliku
-                    echo 'server {
-                        listen ${NGINX_PORT};
-                        server_name localhost;
+                        # Zapisz konfigurację do pliku
+                        echo 'server {
+                            listen ${NGINX_PORT};
+                            server_name localhost;
 
-                        location / {
-                            proxy_pass http://localhost:${SERV_PORT};
-                            proxy_http_version 1.1;
-                            proxy_set_header Upgrade \$http_upgrade;
-                            proxy_set_header Connection 'upgrade';
-                            proxy_set_header Host \$host;
-                            proxy_cache_bypass \$http_upgrade;
-                        }
-                    }' | tee ${NGINX_CONF_PATH}/${REPO_NAME}
+                            location / {
+                                proxy_pass http://localhost:${SERV_PORT};
+                                proxy_http_version 1.1;
+                                proxy_set_header Upgrade \$http_upgrade;
+                                proxy_set_header Connection 'upgrade';
+                                proxy_set_header Host \$host;
+                                proxy_cache_bypass \$http_upgrade;
+                            }
+                        }' | tee ${NGINX_CONF_PATH}/${REPO_NAME}
                     """
 
-                    // Tworzenie linku do pliku w sites-enabled
                     sh """
-                    if [ ! -f /etc/nginx/sites-enabled/${REPO_NAME}.conf ]; then
-                        ln -s ${NGINX_CONF_PATH}/${REPO_NAME} /etc/nginx/sites-enabled/${REPO_NAME}.conf
-                    fi
-                   
+                        if [ ! -f /etc/nginx/sites-enabled/${REPO_NAME}.conf ]; then
+                            ln -s ${NGINX_CONF_PATH}/${REPO_NAME} /etc/nginx/sites-enabled/${REPO_NAME}.conf
+                        fi
                     """
-                     sh 'docker restart nginx'
+                    
+                    sh 'docker restart nginx'
                 }
             }
         }

@@ -9,15 +9,14 @@ pipeline {
         stage('Validate parameters') {
             steps {
                 script {
-                    if (!params.CONT_NAME) {
-                        error "Container name is required"
-                    }
-                    if (!params.GITHUB_REPO_URL) {
-                        error "GitHub repository URL is required"
-                    }
+                    build job: 'validate-params', parameters: [
+                        string(name: 'CONT_NAME', value: params.CONT_NAME),
+                        string(name: 'GITHUB_REPO_URL', value: params.GITHUB_REPO_URL)
+                    ]
                 }
             }
         }
+        
         stage('Create project directory') {
             steps {
                 script {
@@ -36,7 +35,7 @@ pipeline {
 
         stage('Clone') {
             steps {
-                dir("${CONT_NAME}") { 
+                dir("${CONT_NAME}") {
                     script {
                         echo "Cloning repository from ${GITHUB_REPO_URL}"
                         git url: "${GITHUB_REPO_URL}", branch: 'main'
@@ -84,11 +83,10 @@ pipeline {
                     env.BACKEND_PORT = backendPorts[0].split(':')[0]
                     env.FRONTEND_PORT = frontendPorts[0].split(':')[0]
                     def frontendOrigin = composeFile.services.app.environment.find{ it.startsWith('FRONTEND_ORIGIN=') }
-                    def backendOrigin = composeFile.services.backend.environment.find{it.startsWith('BACKEND_ORIGIN=')}
+                    def backendOrigin = composeFile.services.backend.environment.find{ it.startsWith('BACKEND_ORIGIN=') }
 
                     env.FRONTEND_ORIGIN = frontendOrigin?.split('=')[1] ?: "${env.SERVER_URL}:${env.FRONTEND_PORT}"
                     env.BACKEND_ORIGIN = backendOrigin?.split('=')[1] ?: "${env.SERVER_URL}:${env.BACKEND_PORT}"
-
                 }
             }
         }
@@ -104,7 +102,7 @@ pipeline {
         
         stage('Run Docker Containers') {
             steps {
-                dir("${CONT_NAME}") { 
+                dir("${CONT_NAME}") {
                     script {
                         sh 'docker-compose up --build -d'
                     }
@@ -117,15 +115,13 @@ pipeline {
                 script {
                     echo "Running OWASP ZAP scan on frontend and backend..."
                     
-                    
                     def apiDocsUrl = "${env.BACKEND_ORIGIN}/swagger.json"
                     def apiDocsAvailable = false
 
-                    
                     try {
                         def responseCode = sh(script: "curl --write-out '%{http_code}' --silent --output /dev/null ${apiDocsUrl}", returnStdout: true).trim()
                         if (responseCode == '200') {
-                        apiDocsAvailable = true
+                            apiDocsAvailable = true
                         }
                     } catch (Exception e) {
                         echo "Error checking API docs availability: ${e}"
@@ -134,24 +130,23 @@ pipeline {
                     if (apiDocsAvailable) {
                         echo "API documentation found. Running ZAP API scan..."
                         sh """
-                          docker run --name zap-backend-api \
-                          --rm -v \${CONT_NAME}:/zap/wrk:rw zaproxy/zap-stable \
+                            docker run --name zap-backend-api \
+                            --rm -v \${CONT_NAME}:/zap/wrk:rw zaproxy/zap-stable \
                             zap-api-scan.py -t ${apiDocsUrl} -f openapi
                         """
                     } else {
                         echo "API documentation not found. Running full scan..."
                         sh """
-                           docker run --name zap-backend \
-                           --rm -v \${CONT_NAME}:/zap/wrk:rw zaproxy/zap-stable \
+                            docker run --name zap-backend \
+                            --rm -v \${CONT_NAME}:/zap/wrk:rw zaproxy/zap-stable \
                             zap-full-scan.py -t ${env.BACKEND_ORIGIN}
                         """
                     }
 
-                    
                     echo "Running ZAP scan on frontend..."
                     sh """
-                       docker run --name zap-frontend \
-                       --rm -v \${CONT_NAME}:/zap/wrk:rw zaproxy/zap-stable \
+                        docker run --name zap-frontend \
+                        --rm -v \${CONT_NAME}:/zap/wrk:rw zaproxy/zap-stable \
                         zap-full-scan.py -t ${env.FRONTEND_ORIGIN}
                     """
                 }

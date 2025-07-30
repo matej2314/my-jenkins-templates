@@ -5,12 +5,10 @@ pipeline {
         stage('Validate parameters') {
             steps {
                 script {
-                    if (!params.CONT_NAME) {
-                        error "Container name is required"
-                    }
-                    if (!params.GITHUB_REPO_URL) {
-                        error "GitHub repository URL is required"
-                    }
+                    build job: 'validate-params', parameters: [
+                        string(name: 'CONT_NAME', value: params.CONT_NAME),
+                        string(name: 'GITHUB_REPO_URL', value: params.GITHUB_REPO_URL)
+                    ]
                 }
             }
         }
@@ -33,7 +31,7 @@ pipeline {
 
         stage('Clone') {
             steps {
-                dir("${CONT_NAME}") { 
+                dir("${CONT_NAME}") {
                     script {
                         echo "Cloning repository from ${GITHUB_REPO_URL}"
                         git url: "${GITHUB_REPO_URL}", branch: 'main'

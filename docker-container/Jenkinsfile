@@ -1,38 +1,38 @@
 pipeline {
-    agent any 
+    agent any
 
     stages {
         stage('Validate parameters') {
             steps {
                 script {
-                    if (!params.CONT_NAME) {
-                        error "Container name is required"
-                    }
-                    if (!params.GITHUB_REPO_URL) {
-                        error "GitHub repository URL is required"
-                    }
+                    build job: 'validate-params', parameters: [
+                        string(name: 'CONT_NAME', value: params.CONT_NAME),
+                        string(name: 'GITHUB_REPO_URL', value: params.GITHUB_REPO_URL)
+                    ]
+                }
             }
         }
         
         stage('Create project directory') {
-    steps {
-        script {
-            echo "Checking if directory ${CONT_NAME} exists"
-            
-            def dirExists = sh(script: "test -d ${CONT_NAME} && echo true || echo false", returnStdout: true).trim()
-            
-            if (dirExists == 'true') {
-                echo "Directory ${CONT_NAME} already exists. Using it."
-            } else {
-                echo "Creating directory ${CONT_NAME}"
-                sh "mkdir ${CONT_NAME}"
+            steps {
+                script {
+                    echo "Checking if directory ${CONT_NAME} exists"
+                    
+                    def dirExists = sh(script: "test -d ${CONT_NAME} && echo true || echo false", returnStdout: true).trim()
+                    
+                    if (dirExists == 'true') {
+                        echo "Directory ${CONT_NAME} already exists. Using it."
+                    } else {
+                        echo "Creating directory ${CONT_NAME}"
+                        sh "mkdir ${CONT_NAME}"
+                    }
+                }
             }
         }
-    }
-}
+        
         stage('Clone') {
             steps {
-                dir("${CONT_NAME}") { 
+                dir("${CONT_NAME}") {
                     script {
                         echo "Cloning repository from ${GITHUB_REPO_URL}"
                         git url: "${GITHUB_REPO_URL}", branch: 'main'
@@ -72,7 +72,7 @@ pipeline {
         
         stage('Build Docker Image') {
             steps {
-                dir("${CONT_NAME}") { 
+                dir("${CONT_NAME}") {
                     script {
                         sh 'docker --version'
                         sh "docker build -t ${CONT_NAME}:latest -f Dockerfile ."
@@ -81,5 +81,4 @@ pipeline {
             }
         }
     }
-}
 }

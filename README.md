@@ -1,179 +1,202 @@
 # My Jenkins Templates
 
-Kolekcja szablonów Jenkinsfile do automatyzacji procesów CI/CD dla różnych typów projektów. Wszystkie szablony są w pełni parametryzowane i dostosowane do pracy z Jenkinsem działającym na HTTPS z unikalnymi tokenami dla każdego zadania.
+A collection of Jenkinsfile templates for CI/CD automation of various project types. All templates are fully parameterized and designed to work with Jenkins running on HTTPS with unique tokens for each job.
 
-## 📋 Dostępne Szablony
+## 📋 Available Templates
 
 ### 1. 🐳 Docker Container (`docker-container/`)
 
-Szablon do budowania pojedynczego kontenera Docker z repozytorium GitHub.
+Template for building a single Docker container from a GitHub repository.
 
-**Parametry:**
+**Parameters:**
 
--   `CONT_NAME` - Nazwa kontenera (wymagane)
--   `GITHUB_REPO_URL` - URL repozytorium GitHub (wymagane)
+-   `CONT_NAME` - Container name (required)
+-   `GITHUB_REPO_URL` - GitHub repository URL (required)
 
-**Etapy:**
+**Stages:**
 
--   ✅ Walidacja parametrów
--   📁 Tworzenie katalogu projektu
--   📥 Klonowanie repozytorium
--   🔒 Skan bezpieczeństwa z Snyk
--   🏗️ Budowanie obrazu Docker
+-   ✅ Parameter validation
+-   📁 Project directory creation
+-   📥 Repository cloning
+-   🔒 Security scan with Snyk
+-   🏗️ Docker image building
 
 ### 2. 🐳🐳 Docker Multi-Containers (`docker-multi-containers/`)
 
-Szablon do uruchamiania aplikacji wielokontenerowych z docker-compose.
+Template for running multi-container applications with docker-compose.
 
-**Parametry:**
+**Parameters:**
 
--   `CONT_NAME` - Nazwa kontenera (wymagane)
--   `GITHUB_REPO_URL` - URL repozytorium GitHub (wymagane)
+-   `CONT_NAME` - Container name (required)
+-   `GITHUB_REPO_URL` - GitHub repository URL (required)
 
-**Etapy:**
+**Stages:**
 
--   ✅ Walidacja parametrów
--   📁 Tworzenie katalogu projektu
--   📥 Klonowanie repozytorium
--   🔒 Skan bezpieczeństwa z Snyk
--   📖 Odczyt konfiguracji z docker-compose.yml
--   🔍 Sprawdzenie wersji oprogramowania
--   🚀 Uruchomienie kontenerów Docker
--   🛡️ Skan bezpieczeństwa OWASP ZAP
--   🧹 Czyszczenie nieużywanych obrazów Docker
+-   ✅ Parameter validation
+-   📁 Project directory creation
+-   📥 Repository cloning
+-   🔒 Security scan with Snyk
+-   📖 Reading configuration from docker-compose.yml
+-   🔍 Software version check
+-   🚀 Docker containers deployment
+-   🛡️ OWASP ZAP security scan
+-   🧹 Cleanup of unused Docker images
 
 ### 3. ⚛️ Docker Next.js (`docker-next/`)
 
-Szablon specjalnie dostosowany do aplikacji Next.js w kontenerach Docker.
+Template specifically designed for Next.js applications in Docker containers.
 
-**Parametry:**
+**Parameters:**
 
--   `CONT_NAME` - Nazwa kontenera (wymagane)
--   `GITHUB_REPO_URL` - URL repozytorium GitHub (wymagane)
+-   `CONT_NAME` - Container name (required)
+-   `GITHUB_REPO_URL` - GitHub repository URL (required)
 
-**Etapy:**
+**Stages:**
 
--   ✅ Walidacja parametrów
--   📁 Tworzenie katalogu projektu
--   📥 Klonowanie repozytorium
--   🔒 Skan bezpieczeństwa z Snyk
--   🔍 Sprawdzenie wersji oprogramowania
--   🚀 Uruchomienie kontenerów Docker
--   🧹 Czyszczenie nieużywanych obrazów Docker
+-   ✅ Parameter validation
+-   📁 Project directory creation
+-   📥 Repository cloning
+-   🔒 Security scan with Snyk
+-   🔍 Software version check
+-   🚀 Docker containers deployment
+-   🧹 Cleanup of unused Docker images
 
 ### 4. 🟢 Node.js App (`node-app/`)
 
-Szablon do uruchamiania aplikacji Node.js z konfiguracją NGINX.
+Template for running Node.js applications with NGINX configuration.
 
-**Parametry:**
+**Parameters:**
 
--   `GITHUB_URL` - URL repozytorium GitHub
--   `REPO_NAME` - Nazwa repozytorium
--   `SERV_PORT` - Port serwera aplikacji
+-   `GITHUB_URL` - GitHub repository URL
+-   `REPO_NAME` - Repository name
+-   `SERV_PORT` - Application server port
 
-**Etapy:**
+**Stages:**
 
--   📥 Klonowanie repozytorium
--   🔧 Ładowanie zmiennych środowiskowych
--   🔍 Sprawdzenie wersji oprogramowania
--   📦 Instalacja zależności
--   ⚙️ Konfiguracja NGINX
--   🚀 Uruchomienie projektu
+-   📥 Repository cloning
+-   🔧 Environment variables loading
+-   🔍 Software version check
+-   📦 Dependencies installation
+-   ⚙️ NGINX configuration
+-   🚀 Project deployment
 
-## 🔧 Wymagania
+### 5. ✅ Parameter Validation (`validate-params/`)
+
+Utility template for validating required parameters across all pipelines.
+
+**Parameters:**
+
+-   `CONT_NAME` - Container name (required)
+-   `GITHUB_REPO_URL` - GitHub repository URL (required)
+
+**Stages:**
+
+-   ✅ Parameter validation
+
+## 🔧 Requirements
 
 ### Jenkins
 
--   Jenkins z włączonym HTTPS
--   Unikalne tokeny dla każdego zadania
--   Zainstalowane pluginy:
+-   Jenkins with HTTPS enabled
+-   Unique tokens for each job
+-   Installed plugins:
     -   Git Plugin
     -   Docker Plugin
     -   NodeJS Plugin
     -   Pipeline Plugin
 
-### Narzędzia na Jenkinsie
+### Tools on Jenkins
 
 -   Docker
 -   Docker Compose
 -   Node.js 20
 -   Snyk CLI
--   OWASP ZAP (dla skanów bezpieczeństwa)
--   NGINX (dla aplikacji Node.js)
+-   OWASP ZAP (for security scans)
+-   NGINX (for Node.js applications)
 
-## 🚀 Sposób Użycia
+## 🚀 Usage
 
-### 1. Utwórz nowe zadanie Jenkins
+### 1. Create a new Jenkins job
 
-1. Przejdź do Jenkins → New Item
-2. Wybierz "Pipeline"
-3. Wprowadź nazwę zadania (np. "Docker-Build-Pipeline")
+1. Go to Jenkins → New Item
+2. Select "Pipeline"
+3. Enter job name (e.g., "Docker-Build-Pipeline")
 
-**Uwaga:** To zadanie będzie służyć jako szablon dla wielu projektów - każdy może używać tego samego zadania z różnymi parametrami.
+**Note:** This job will serve as a template for multiple projects - each can use the same job with different parameters.
 
-### 2. Skonfiguruj Pipeline
+### 2. Configure Pipeline
 
-1. W sekcji "Pipeline" wybierz "Pipeline script from SCM"
-2. Wybierz "Git" jako SCM
-3. Wprowadź URL tego repozytorium (z szablonami Jenkinsfile)
-4. Ustaw branch na `main`
-5. W "Script Path" wpisz ścieżkę do wybranego szablonu (np. `docker-container/Jenkinsfile`)
+1. In the "Pipeline" section, select "Pipeline script from SCM"
+2. Select "Git" as SCM
+3. Enter the URL of this repository (with Jenkinsfile templates)
+4. Set branch to `main`
+5. In "Script Path" enter the path to the selected template (e.g., `docker-container/Jenkinsfile`)
 
-**Uwaga:** Pipeline będzie uruchamiany z repozytorium docelowym (przekazanym przez parametr `GITHUB_REPO_URL` lub `GITHUB_URL`), ale skrypt Jenkinsfile będzie pobierany z tego repozytorium z szablonami.
+**Note:** The pipeline will run from the target repository (passed via `GITHUB_REPO_URL` or `GITHUB_URL` parameter), but the Jenkinsfile script will be fetched from this repository with templates.
 
-### 3. Dodaj parametry
+### 3. Add parameters
 
-W sekcji "Build Triggers" → "This project is parameterized" dodaj wymagane parametry:
+In the "Build Triggers" → "This project is parameterized" section, add the required parameters:
 
-**Dla szablonów Docker:**
+**For Docker templates:**
 
 -   `CONT_NAME` (String Parameter)
 -   `GITHUB_REPO_URL` (String Parameter)
 
-**Dla Node.js App:**
+**For Node.js App:**
 
 -   `GITHUB_URL` (String Parameter)
 -   `REPO_NAME` (String Parameter)
 -   `SERV_PORT` (String Parameter)
 
-### 4. Uruchom zadanie
+### 4. Run the job
 
-1. Kliknij "Build with Parameters"
-2. Wprowadź wartości parametrów (w tym URL repozytorium docelowego)
-3. Kliknij "Build"
+1. Click "Build with Parameters"
+2. Enter parameter values (including the target repository URL)
+3. Click "Build"
 
-**Alternatywnie:** Skonfiguruj webhook w repozytorium docelowym, aby automatycznie uruchamiał pipeline z odpowiednimi parametrami.
+**Alternatively:** Configure a webhook in the target repository to automatically trigger the pipeline with appropriate parameters.
 
-## 🔒 Bezpieczeństwo
+## 🔒 Security
 
-Wszystkie szablony zawierają wbudowane skany bezpieczeństwa:
+All templates include built-in security scans:
 
--   **Snyk** - skanowanie zależności, obrazów Docker i konfiguracji IaC
--   **OWASP ZAP** - testy penetracyjne aplikacji web (tylko docker-multi-containers)
+-   **Snyk** - dependency, Docker image, and IaC configuration scanning
+-   **OWASP ZAP** - web application penetration testing (docker-multi-containers only)
 
-## 📁 Struktura Repozytorium
+## 📁 Repository Structure
 
 ```
 my-jenkins-templates/
 ├── docker-container/
-│   └── Jenkinsfile          # Pojedynczy kontener Docker
+│   └── Jenkinsfile          # Single Docker container
 ├── docker-multi-containers/
-│   └── Jenkinsfile          # Wielokontenerowa aplikacja
+│   └── Jenkinsfile          # Multi-container application
 ├── docker-next/
-│   └── Jenkinsfile          # Aplikacja Next.js
+│   └── Jenkinsfile          # Next.js application
 ├── node-app/
-│   └── Jenkinsfile          # Aplikacja Node.js z NGINX
+│   └── Jenkinsfile          # Node.js application with NGINX
+├── validate-params/
+│   └── Jenkinsfile          # Parameter validation utility
 └── README.md
 ```
 
-## 🔄 Aktualizacje
+## 🎯 Key Features
 
-Szablony są regularnie aktualizowane z najnowszymi praktykami CI/CD i narzędziami bezpieczeństwa. Sprawdzaj regularnie dostępne aktualizacje.
+- **Consistent Formatting**: All Jenkinsfile templates follow standardized formatting with proper indentation and structure
+- **Parameter Validation**: Built-in validation ensures required parameters are provided
+- **Security Integration**: Comprehensive security scanning with Snyk and OWASP ZAP
+- **Multi-Environment Support**: Templates work across different deployment scenarios
+- **Clean Code Practices**: Well-structured and maintainable pipeline code
 
-## 🤝 Wsparcie
+## 🔄 Updates
 
-W przypadku problemów lub pytań dotyczących szablonów, utwórz issue w tym repozytorium lub skontaktuj się z zespołem DevOps.
+Templates are regularly updated with the latest CI/CD practices and security tools. Check regularly for available updates.
+
+## 🤝 Support
+
+For issues or questions regarding the templates, create an issue in this repository or contact the DevOps team.
 
 ---
 
-**Uwaga:** Upewnij się, że Jenkins ma odpowiednie uprawnienia do klonowania repozytoriów i uruchamiania kontenerów Docker.
+**Note:** Ensure that Jenkins has appropriate permissions to clone repositories and run Docker containers.
