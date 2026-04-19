@@ -18,6 +18,7 @@ Template for building a single Docker container from a GitHub repository.
 -   ✅ Parameter validation
 -   📁 Project directory creation
 -   📥 Repository cloning
+-   🔑 Map deployment variables (manager) — illustrative lookup keyed by `CONT_NAME` (e.g. Vault, cloud SM, Jenkins credentials); no secrets logged
 -   🔒 Security scan with Snyk
 -   🏗️ Docker image building
 
@@ -35,6 +36,7 @@ Template for running multi-container applications with docker-compose.
 -   ✅ Parameter validation
 -   📁 Project directory creation
 -   📥 Repository cloning
+-   🔑 Map deployment variables (manager) — illustrative lookup keyed by `CONT_NAME` (e.g. Vault, cloud SM, Jenkins credentials); no secrets logged
 -   🔒 Security scan with Snyk
 -   📖 Reading configuration from docker-compose.yml
 -   🔍 Software version check
@@ -56,6 +58,7 @@ Template specifically designed for Next.js applications in Docker containers.
 -   ✅ Parameter validation
 -   📁 Project directory creation
 -   📥 Repository cloning
+-   🔑 Map deployment variables (manager) — illustrative lookup keyed by `CONT_NAME` (e.g. Vault, cloud SM, Jenkins credentials); no secrets logged
 -   🔒 Security scan with Snyk
 -   🔍 Software version check
 -   🚀 Docker containers deployment
@@ -185,6 +188,7 @@ my-jenkins-templates/
 
 - **Consistent Formatting**: All Jenkinsfile templates follow standardized formatting with proper indentation and structure
 - **Parameter Validation**: Built-in validation ensures required parameters are provided
+- **Variables Manager Pattern** (Docker templates): After clone, pipelines show how deployment scope can be derived from `CONT_NAME` for a secrets/variables backend; replace the illustrative step with your real integration (`withVault`, cloud APIs, etc.)
 - **Security Integration**: Comprehensive security scanning with Snyk and OWASP ZAP
 - **Multi-Environment Support**: Templates work across different deployment scenarios
 - **Clean Code Practices**: Well-structured and maintainable pipeline code

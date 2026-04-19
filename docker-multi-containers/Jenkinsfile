@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SERVER_URL = "http://185.170.196.107"
+        SERVER_URL = "http://your-server-ip"
     }
 
     stages {
@@ -40,6 +40,20 @@ pipeline {
                         echo "Cloning repository from ${GITHUB_REPO_URL}"
                         git url: "${GITHUB_REPO_URL}", branch: 'main'
                     }
+                }
+            }
+        }
+
+        stage('Map deployment variables (manager)') {
+            steps {
+                script {
+                    // Illustrative: Vault KV, cloud SM, Doppler, Jenkins Credentials Binding, etc.
+                    // Lookup key is tied to CONT_NAME so each repo/deployment maps to its own secret scope.
+                    def managerLookupKey = "ci/projects/${CONT_NAME}"
+                    echo "Variables manager lookup key: ${managerLookupKey}"
+                    env.DEPLOY_MANAGER_SCOPE = managerLookupKey
+                    env.DEPLOY_IMAGE_REF = "${CONT_NAME}:${BUILD_NUMBER}"
+                    echo "Mapped scope and artifact ref; secret values are not printed."
                 }
             }
         }
