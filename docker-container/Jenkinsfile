@@ -94,5 +94,15 @@ pipeline {
                 }
             }
         }
+
+        stage('Run Docker Containers') {
+            steps {
+                dir("${CONT_NAME}") { 
+                    script {
+                        sh 'docker-compose up --build -d'
+                    }
+                }
+            }
+        }
     }
 }
